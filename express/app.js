@@ -1,56 +1,72 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
+const MONGO_URI = process.env.MONGO_URI;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Task 04: Підключення до бази даних
-// Назва бази: hillel_homework, Колекція: cities
-const mongoURI = 'mongodb://127.0.0.1:27017/hillel_homework';
-
-mongoose.connect(mongoURI)
-    .then(() => console.log('MongoDB connected successfully'))
-    .catch(err => console.error('MongoDB connection error:', err));
-
-// Task 04: Схема та модель
 const citySchema = new mongoose.Schema({
-    name: String
+    name: { type: String, required: true }
 });
 
 const City = mongoose.model('City', citySchema, 'cities');
 
-// Task 05: Роут для пошуку міст
-app.get('/api/city', async (req, res) => {
+app.get('/api/city', async (req, res, next) => {
     try {
-        const searchText = req.query.city;
-        
-        if (!searchText) {
+        let { city } = req.query;
+
+        // Перевірка, чи це взагалі рядок (захист від некоректних запитів)
+        if (typeof city !== 'string' || !city.trim()) {
             return res.json({ cities: [] });
         }
 
-        // Пошук через regex (i - ігнорування регістру)
+        const searchText = city.trim();
+
+        const escapedText = searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
         const result = await City.find({
-            name: {
-                $regex: searchText,
-                $options: "i"
-            }
-        });
+            name: { $regex: escapedText, $options: "i" }
+        }).limit(10); 
 
-        // Форматування відповіді: масив рядків (назв міст)
-        const cityNames = result.map(item => item.name);
-
-        res.json({ cities: cityNames });
+        res.json({ cities: result.map(c => c.name) });
     } catch (error) {
-        console.error('Error during search:', error);
-        res.status(500).json({ error: 'Server error' });
+        next(error); 
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+app.use((req, res) => {
+    res.status(404).json({ 
+        message: "Маршрут не знайдено. Використовуйте GET /api/city?city=назва" 
+    });
 });
+
+app.use((err, req, res, next) => {
+    console.error('SERVER ERROR:', err.stack);
+    res.status(500).json({ 
+        error: 'Внутрішня помилка сервера. Спробуйте пізніше.' 
+    });
+});
+
+if (!MONGO_URI) {
+    console.error(' Помилка: MONGO_URI не знайдено в .env файлі!');
+    process.exit(1);
+}
+
+mongoose.connect(MONGO_URI)
+    .then(() => {
+        console.log(' MongoDB connected successfully');
+        app.listen(PORT, () => {
+            console.log(` Server is running on http://localhost:${PORT}`);
+        });
+    })
+    .catch(err => {
+        console.error(' Database connection error:', err.message);
+        process.exit(1);
+    });
