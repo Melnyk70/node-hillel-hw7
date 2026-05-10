@@ -4,4 +4,5 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .DS_Store
-Thumbs.dbnode_modules/
+Thumbs.dbnode_modules/package-lock.json
+.env

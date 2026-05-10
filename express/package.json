@@ -1,18 +1,25 @@
 {
   "name": "express-server",
   "version": "1.0.0",
+  "description": "Homework 7",
   "type": "module",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node app.js",
+    "dev": "node --watch app.js"
   },
+  "keywords": [
+    "express",
+    "mongodb",
+    "mongoose",
+    "react",
+    "rest-api"
+  ],
+  "license": "ISC",
   "dependencies": {
-    "cors": "^2.8.6",
-    "express": "^4.22.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
     "mongoose": "^8.23.1"
-  },
-  "description": "",
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  }
 }
